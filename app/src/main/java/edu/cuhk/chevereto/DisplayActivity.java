@@ -24,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.LinearLayout;
 import androidx.annotation.Nullable;
+import android.os.Handler;
 
 public class DisplayActivity extends AppCompatActivity {
 
@@ -98,9 +99,13 @@ public class DisplayActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-//                if (url.contains(chevereto_url) || url.contains(chevereto_url+"/upload")) {
-                    hideBottom();
-//                }
+//                new Handler().postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        hideButtons();
+//                    }
+//                }, 2000);
+                    hideButtons();
             }
 
             @Override
@@ -115,6 +120,12 @@ public class DisplayActivity extends AppCompatActivity {
             }
 
             @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                hideButtons();
+            }
+
+            @Override
             public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
                 super.onReceivedError(view, errorCode, description, failingUrl);
                 Log.e("WebView Error", "Error code: " + errorCode + ", Description: " + description);
@@ -124,22 +135,34 @@ public class DisplayActivity extends AppCompatActivity {
         cheUploadWeb.loadUrl(chevereto_url);
     }
 
-    public void hideBottom() {
-        Log.d("hideBottom: 1", "123");
+    public void hideButtons() {
+        Log.d("hideButtons-start: ", "Inside hideButtons-start");
         try {
-            String javascript = "var observer = new MutationObserver(function(mutationsList, observer) {"
-                    + "var btn_menu = document.getElementsByClassName('top-btn-text')[0];"
-                    + "var upload_menu = document.getElementsByClassName('top-btn-el phone-hide')[1];"
-                    + "if (btn_menu && upload_menu) {"
-                    + "btn_menu.style.display = 'none';"
-                    + "upload_menu.style.display = 'none';"
-                    + "}});"
-                    + "var observerConfig = {childList: true, subtree: true, };"
-                    + "observer.observe(document.body, observerConfig);";
-            cheUploadWeb.evaluateJavascript(javascript, null);
+            String javascript = "setTimeout(function() { " +
+                    "var btn_menu = document.getElementsByClassName('top-btn-text')[0];" +
+                    "var upload_menu = document.getElementsByClassName('top-btn-el phone-hide')[1];" +
+                    "if (btn_menu && upload_menu) {" +
+                    "btn_menu.style.display = 'none';" +
+                    "upload_menu.style.display = 'none';" +
+                    "}" +
+                    "}, 20);"; // Adjust the delay as needed (1000 milliseconds = 1 second)
+            cheUploadWeb.evaluateJavascript(javascript, new ValueCallback<String>() {
+                @Override
+                public void onReceiveValue(String value) {
+                    // Check if there are any errors returned
+                    if (value != null && !value.isEmpty() && !"null".equalsIgnoreCase(value.trim())) {
+                        Log.e("JavaScript Error", value); // Log the JavaScript error
+                    } else {
+                        Log.d("hideButtons: ", "JavaScript executed successfully");
+                    }
+                }
+            });
+            Log.d("hideButtons-suc: ", "Inside hideButtons-suc");
         } catch (Exception e) {
             Toast.makeText(getApplicationContext(), e.toString(), Toast.LENGTH_SHORT).show();
+            Log.d("hideButtons-err: ", "Inside hideButtons-err");
         }
+        Log.d("hideButtons-end: ", "Inside hideButtons-end");
     }
 
     ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
@@ -160,7 +183,6 @@ public class DisplayActivity extends AppCompatActivity {
                                 uploadFiles = null;
                             }
                         } else {
-// Single image selected
                             Uri imageUri = data.getData();
                             if (uploadFile != null) {
                                 uploadFile.onReceiveValue(imageUri);
@@ -216,7 +238,6 @@ public class DisplayActivity extends AppCompatActivity {
             }
         }
     }
-
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
